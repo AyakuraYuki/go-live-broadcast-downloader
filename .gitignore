@@ -1,0 +1,8 @@
+### JetBrains
+.idea
+*.iml
+### Protobuf Gen
+pbgen
+pbgen/service/
+### macOS
+.DS_Store
