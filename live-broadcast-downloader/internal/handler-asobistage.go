@@ -3,10 +3,10 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
+	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/typeconvert"
 	"github.com/gorilla/websocket"
-	"go-live-broadcast-downloader/plugins/file"
-	cjson "go-live-broadcast-downloader/plugins/json"
-	"go-live-broadcast-downloader/plugins/typeconvert"
 	"log"
 	"os"
 	"os/exec"

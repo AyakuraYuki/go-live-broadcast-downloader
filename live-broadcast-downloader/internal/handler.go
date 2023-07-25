@@ -1,6 +1,8 @@
 package internal
 
-import "go-live-broadcast-downloader/plugins/consts"
+import (
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/consts"
+)
 
 const (
 	MaxTick = 20000

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"go-live-broadcast-downloader/plugins/file"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
 	"net"
 	"os"
 	"runtime"

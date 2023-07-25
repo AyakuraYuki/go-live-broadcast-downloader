@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"go-live-broadcast-downloader/plugins/hack"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/hack"
 	"sort"
 	"strconv"
 	"strings"

@@ -3,7 +3,7 @@ package nhttp
 import (
 	"bytes"
 	"context"
-	cjson "go-live-broadcast-downloader/plugins/json"
+	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
 	"io"
 	"log"
 	"net/http"

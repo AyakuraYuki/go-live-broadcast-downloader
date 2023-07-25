@@ -2,7 +2,7 @@ package internal
 
 import (
 	"fmt"
-	"go-live-broadcast-downloader/plugins/net/urls"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/urls"
 	"log"
 	"net/url"
 	"strings"

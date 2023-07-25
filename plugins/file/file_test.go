@@ -1,7 +1,7 @@
 package file
 
 import (
-	cjson "go-live-broadcast-downloader/plugins/json"
+	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
 	"testing"
 )
 
