@@ -27,7 +27,7 @@ jobs:
 
       # Test
       - name: Unit Testing
-        run: go test -v .
+        run: go test -v ./live-broadcast-downloader/
 
       # Win
       - run: GOOS=windows GOARCH=386 VERSION=${RELEASE_VERSION} make release
