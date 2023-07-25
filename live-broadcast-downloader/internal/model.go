@@ -10,8 +10,8 @@ import (
 
 // M3U8Spec declares the information of m3u8 playlist, presents m3u8 filename and crypto key filename
 type M3U8Spec struct {
-	PlaylistFilename string `json:"playlistFilename"`
-	KeyName          string `json:"keyName"`
+	Filename string `json:"filename"`
+	KeyName  string `json:"keyName"`
 }
 
 // Task declares the download task
@@ -43,7 +43,7 @@ func (t *Task) M3U8Url() string {
 	if !strings.HasSuffix(t.Prefix, "/") {
 		m3u8Url.WriteString("/")
 	}
-	m3u8Url.WriteString(t.Spec.PlaylistFilename)
+	m3u8Url.WriteString(t.Spec.Filename)
 	return m3u8Url.String()
 }
 

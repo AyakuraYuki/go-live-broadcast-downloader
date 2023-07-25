@@ -27,7 +27,7 @@ func asobistageTaskValidator(task *Task) error {
 	if task.Spec.KeyName == "" {
 		return errors.New("asobistage requires a key file to handle crypto *.ts data")
 	}
-	if task.Spec.PlaylistFilename == "" {
+	if task.Spec.Filename == "" {
 		return errors.New("missing m3u8 filename")
 	}
 	return nil
@@ -40,10 +40,10 @@ func asobistage(task *Task) error {
 		log.Printf("[asobistage] download key file successed, file: %s\n", path.Join(task.SaveTo, task.Spec.KeyName))
 	}
 
-	if err := DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.PlaylistFilename); err != nil {
+	if err := DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename); err != nil {
 		return err
 	} else {
-		log.Printf("[asobistage] download m3u8 playlist successed, file: %s\n", path.Join(task.SaveTo, task.Spec.PlaylistFilename))
+		log.Printf("[asobistage] download m3u8 playlist successed, file: %s\n", path.Join(task.SaveTo, task.Spec.Filename))
 	}
 
 	if err := Process(task); err != nil {
@@ -53,7 +53,7 @@ func asobistage(task *Task) error {
 	}
 
 	// merge clips
-	m3u8Path := path.Join(task.SaveTo, task.Spec.PlaylistFilename)
+	m3u8Path := path.Join(task.SaveTo, task.Spec.Filename)
 	videoPath := path.Join(task.SaveTo, "output.mp4")
 	cmd := exec.Command("ffmpeg", "-allowed_extensions", "ALL", "-i", m3u8Path, "-c", "copy", videoPath)
 	if err := cmd.Run(); err != nil {

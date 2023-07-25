@@ -17,17 +17,17 @@ func zaikoTaskValidator(task *Task) error {
 	if task.Spec == nil {
 		return errors.New("missing spec")
 	}
-	if task.Spec.PlaylistFilename == "" {
+	if task.Spec.Filename == "" {
 		return errors.New("missing m3u8 filename")
 	}
 	return nil
 }
 
 func zaiko(task *Task) error {
-	if err := DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.PlaylistFilename); err != nil {
+	if err := DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename); err != nil {
 		return err
 	} else {
-		log.Printf("[zaiko] download m3u8 playlist successed, file: %s\n", path.Join(task.SaveTo, task.Spec.PlaylistFilename))
+		log.Printf("[zaiko] download m3u8 playlist successed, file: %s\n", path.Join(task.SaveTo, task.Spec.Filename))
 	}
 
 	if err := Process(task); err != nil {
@@ -37,7 +37,7 @@ func zaiko(task *Task) error {
 	}
 
 	// merge clips
-	m3u8Path := path.Join(task.SaveTo, task.Spec.PlaylistFilename)
+	m3u8Path := path.Join(task.SaveTo, task.Spec.Filename)
 	videoPath := path.Join(task.SaveTo, "output.mp4")
 	cmd := exec.Command("ffmpeg", "-i", m3u8Path, "-c", "copy", videoPath)
 	if err := cmd.Run(); err != nil {

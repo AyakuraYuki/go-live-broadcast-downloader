@@ -23,7 +23,7 @@ func DownloadFile(downloadUrl, saveTo, filename string) error {
 }
 
 func Process(task *Task) error {
-	m3u8Path := path.Join(task.SaveTo, task.Spec.PlaylistFilename)
+	m3u8Path := path.Join(task.SaveTo, task.Spec.Filename)
 	tsLinks := ParseM3U8(m3u8Path)
 	if len(tsLinks) == 0 {
 		return errors.New("empty playlist")
@@ -82,37 +82,5 @@ func CreateFolder(path string) error {
 		return err
 	}
 	log.Printf("path created at %s\n", path)
-	return nil
-}
-
-func Validate(distPath string) error {
-	exist, _ := file.IsPathExist(distPath)
-	if !exist {
-		return errors.New("please execute download script")
-	}
-
-	downloadedFiles := make([]string, 0)
-	file.WalkDir(distPath, &downloadedFiles)
-	tsLinks := make([]*TSLink, 0)
-	for _, downloadedFile := range downloadedFiles {
-		if strings.HasSuffix(downloadedFile, ".m3u8") {
-			tsLinks = ParseM3U8(path.Join(distPath, downloadedFile))
-		}
-	}
-
-	missingAmount := 0
-	for _, tsLink := range tsLinks {
-		fullPath := path.Join(distPath, tsLink.Filename)
-		exist0, _ := file.IsPathExist(fullPath)
-		if !exist0 {
-			log.Printf("missing file: %s\n", tsLink.Filename)
-			missingAmount += 1
-		}
-	}
-	if missingAmount == 0 {
-		log.Println("download completed")
-	} else {
-		log.Printf("missing %v files\n", missingAmount)
-	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/consts"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
 	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/localization"
@@ -18,8 +19,12 @@ import (
 var (
 	platform           string
 	taskDefinitionFile string
-	localeTag          language.Tag
-	err                error
+	proxyHost          string
+	proxyPort          int
+	proxyType          string
+
+	localeTag language.Tag
+	err       error
 )
 
 func init() {
@@ -29,20 +34,26 @@ func init() {
 	}
 	l10nDictionary := localization.GetLocalizationDictionary(localeTag)
 
+	flag.StringVar(&platform, "p", platform, l10nDictionary[localization.KeyPlatform])
 	flag.StringVar(&platform, "plat", platform, l10nDictionary[localization.KeyPlatform])
-	flag.StringVar(&taskDefinitionFile, "json", taskDefinitionFile, l10nDictionary[localization.KeyTaskDefinitionFile])
+
+	flag.StringVar(&taskDefinitionFile, "c", taskDefinitionFile, l10nDictionary[localization.KeyTaskDefinitionFile])
+	flag.StringVar(&taskDefinitionFile, "config", taskDefinitionFile, l10nDictionary[localization.KeyTaskDefinitionFile])
+
+	flag.StringVar(&proxyHost, "proxy_host", "127.0.0.1", l10nDictionary[localization.KeyProxyHost])
+	flag.IntVar(&proxyPort, "proxy_port", 7890, l10nDictionary[localization.KeyProxyPort])
+	flag.StringVar(&proxyType, "proxy_type", "127.0.0.1", l10nDictionary[localization.KeyProxyType])
 
 	flag.Usage = func() {
 		w := flag.CommandLine.Output()
-		fmt.Fprintf(w, "Usage of %s: %s -plat <asobistage|eplus|zaiko> -json </path/to/config.json>\n", os.Args[0], os.Args[0])
+		fmt.Fprintf(w, "Usage of %s: %s -p <asobistage|eplus|zaiko> -c </path/to/config.json>\n", os.Args[0], os.Args[0])
 		flag.PrintDefaults()
 		fmt.Fprintf(w, "\n")
 		fmt.Fprintf(w, l10nDictionary[localization.KeyUsage])
 	}
 }
 
-func main() {
-	flag.Parse()
+func validateFlags() {
 	if platform == "" && taskDefinitionFile == "" {
 		flag.Usage()
 		os.Exit(1)
@@ -53,6 +64,14 @@ func main() {
 	if taskDefinitionFile == "" {
 		log.Fatal("[error] please specific a path to task config json file")
 	}
+	if proxyType != "" && consts.MatchProxy(proxyType) == "" {
+		log.Fatal("[error] we are not support the proxy type that you presented, you can only use socks5, https or http proxy")
+	}
+}
+
+func main() {
+	flag.Parse()
+	validateFlags()
 
 	platformHandler := internal.PlatformHandler[strings.ToLower(platform)]
 	if platformHandler == nil {
@@ -98,7 +117,7 @@ func main() {
 			break
 		}
 		// check downloaded resources
-		err = internal.Validate(task.SaveTo)
+		err = internal.ValidateArchive(task.SaveTo)
 		if err != nil {
 			log.Printf("Validate failed: %v\n", err)
 		} else {

@@ -15,11 +15,21 @@ This program does not use webdriver or any other headless browser. I made it dow
 First thing first, you should have installed FFMpeg, we will merge the archive by using FFMpeg as soon as the archive clips downloaded.
 
 ```text
-Usage of ./live-broadcast-downloader: live-broadcast-downloader -plat <asobistage|eplus|zaiko> -json </path/to/config.json>
-  -json string
+Usage of ./live-broadcast-downloader: ./live-broadcast-downloader -p <asobistage|eplus|zaiko> -c </path/to/config.json>
+  -c string
         An absolute path of your task declaration JSON file.
+  -config string
+        An absolute path of your task declaration JSON file.
+  -p string
+        The name of Live Broadcast Platform, available values are [asobistage, eplus, zaiko].
   -plat string
         The name of Live Broadcast Platform, available values are [asobistage, eplus, zaiko].
+  -proxy_host string
+        Proxy server host or IP address. (default "127.0.0.1")
+  -proxy_port int
+        Proxy server port. (default 7890)
+  -proxy_type string
+        Proxy type, available types are [http, https, socks5]. (default "127.0.0.1")
 
 The JSON configuration should be like the following text:
 [
@@ -28,7 +38,7 @@ The JSON configuration should be like the following text:
         "saveTo": "/home/username/archive/dist-path",
         "pageUrl": "https://live-broadcast-platform.host/link/to/archive/page-url",
         "spec": {
-            "playlistFilename": "index.m3u8",
+            "filename": "index.m3u8",
             "keyName": "aes128.key"
         }
     }
@@ -43,4 +53,9 @@ This is a JSON array that declares a bunch of tasks with:
 
 Please prepare your own tasks config by using the format we declared.
 
+We are currently not support proxy, just declared the parameter names.
 ```
+
+## TODO
+
+- Download archives through proxy
