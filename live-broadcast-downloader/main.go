@@ -54,10 +54,11 @@ func main() {
 		log.Fatal("[error] please specific a path to task config json file")
 	}
 
-	handler := internal.PlatformHandler[strings.ToLower(platform)]
-	if handler == nil {
+	platformHandler := internal.PlatformHandler[strings.ToLower(platform)]
+	if platformHandler == nil {
 		log.Fatalf("platform %s currently not supported\n", platform)
 	}
+	taskValidator := internal.TaskValidator[strings.ToLower(platform)]
 
 	tasks := make([]*internal.Task, 0)
 
@@ -73,12 +74,21 @@ func main() {
 	st := time.Now()
 	log.Println("This is a program that downloads live broadcast archives from asobistage, eplus, zaiko and other m3u8-base stream archives.")
 	for _, task := range tasks {
+		// validate
+		if taskValidator != nil {
+			err = taskValidator(task)
+			if err != nil {
+				panic(err)
+			}
+		}
+		// create dist dir
 		err = internal.CreateFolder(task.SaveTo)
 		if err != nil {
 			panic(err)
 		}
+		// download...
 		for {
-			err = handler(task)
+			err = platformHandler(task)
 			if err != nil {
 				log.Printf("Error: %v\n", err)
 				log.Println("Error occurred, restarting...")
@@ -87,6 +97,7 @@ func main() {
 			}
 			break
 		}
+		// check downloaded resources
 		err = internal.Validate(task.SaveTo)
 		if err != nil {
 			log.Printf("Validate failed: %v\n", err)

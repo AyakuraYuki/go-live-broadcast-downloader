@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"go-live-broadcast-downloader/plugins/file"
@@ -12,6 +13,25 @@ import (
 	"path"
 	"regexp"
 )
+
+func asobistageTaskValidator(task *Task) error {
+	if task.Prefix == "" {
+		return errors.New("missing prefix")
+	}
+	if task.SaveTo == "" {
+		return errors.New("we don't know where you want to save the archive")
+	}
+	if task.Spec == nil {
+		return errors.New("missing spec")
+	}
+	if task.Spec.KeyName == "" {
+		return errors.New("asobistage requires a key file to handle crypto *.ts data")
+	}
+	if task.Spec.PlaylistFilename == "" {
+		return errors.New("missing m3u8 filename")
+	}
+	return nil
+}
 
 func asobistage(task *Task) error {
 	if err := DownloadFile(task.KeyUrl(), task.SaveTo, task.Spec.KeyName); err != nil {

@@ -5,10 +5,14 @@ This is a program that downloads live broadcast archives from most of m3u8-base 
 It supports the following platform currently:
 
 - [Asobistage](https://asobistage.asobistore.jp/)
+- [Eplus](https://ib.eplus.jp/)
+- [Zaiko](https://zaiko.io/)
 
 This program does not use webdriver or any other headless browser. I made it download archive by using coroutines to boost the download speed.
 
 ## How to use
+
+First thing first, you should have installed FFMpeg, we will merge the archive by using FFMpeg as soon as the archive clips downloaded.
 
 ```text
 Usage of ./live-broadcast-downloader: live-broadcast-downloader -plat <asobistage|eplus|zaiko> -json </path/to/config.json>
