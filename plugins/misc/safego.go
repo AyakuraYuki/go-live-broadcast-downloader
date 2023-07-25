@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go-live-broadcast-downloader/plugins/log"
+	"log"
 
 	"github.com/afex/hystrix-go/hystrix"
 	"golang.org/x/sync/errgroup"
@@ -34,7 +34,7 @@ func SafeGo(ctx context.Context, fs ...WorkFuncWithCtx) error {
 		go func(i int) (err error) {
 			defer func() {
 				if e := recover(); e != nil {
-					log.Info("panic recover").Stack().Msgf("%v", e)
+					log.Printf("%v\n", err)
 					if er, ok := e.(error); ok {
 						err = er
 					} else {
@@ -99,7 +99,7 @@ func MultiRunWithCtx(fs ...WorkFuncWithCtx) error {
 func Hystrix(name string, run func() error, fallback func(error) error) error {
 	callBackFunc := func(err error) error {
 		if err != nil && IsHystrixErr(err) {
-			log.Error("Hystrix").Msgf("name:%s, err:%s", name, err)
+			log.Printf("[error] name: %s, err: %s", name, err)
 		}
 		if fallback == nil {
 			return err

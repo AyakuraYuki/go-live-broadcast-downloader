@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	cjson "go-live-broadcast-downloader/plugins/json"
-	"go-live-broadcast-downloader/plugins/log"
 	"io"
+	"log"
 	"net/http"
 	nurl "net/url"
 	"strings"
@@ -44,7 +44,7 @@ func PostRaw(client *http.Client, url string, header http.Header, reqBody interf
 		}
 	}
 	if err != nil {
-		log.Error("PostRaw").Stack().Msgf("err:%s", err)
+		log.Printf("err: %s\n", err)
 	}
 	return data, err
 }
@@ -66,7 +66,7 @@ func PostRaw2(client *http.Client, url string, header http.Header, reqBody inter
 		}
 	}
 	if err != nil {
-		log.Error("PostRaw").Stack().Msgf("err:%s", err)
+		log.Printf("err: %s\n", err)
 	}
 	return data, rspHeader, httpCode, err
 }
@@ -86,7 +86,7 @@ func PostWithUnmarshal(client *http.Client, url string, header http.Header, reqB
 	decoder.UseNumber()
 	err = decoder.Decode(resp)
 	if err != nil {
-		log.Error("PostWithUnmarshal.Decode").Stack().Msgf("err:%s, url:%s, respData:%s", err, url, string(data))
+		log.Printf("err: %s, url: %s, respData: %s\n", err, url, string(data))
 	}
 	return err
 }
@@ -105,7 +105,7 @@ func GetRaw(client *http.Client, url string, header http.Header, reqBody interfa
 		}
 	}
 	if err != nil {
-		log.Error("GetRaw").Stack().Msgf("err:%s", err)
+		log.Printf("err: %s\n", err)
 	}
 	return data, err
 }
@@ -125,7 +125,7 @@ func Head(client *http.Client, url string, header http.Header, params ...int) (h
 		}
 	}
 	if err != nil {
-		log.Error("Head").Msgf("err:%s", err)
+		log.Printf("err: %s\n", err)
 	}
 	return rspHeader, httpStatus, err
 }
@@ -145,7 +145,7 @@ func GetWithUnmarshal(client *http.Client, url string, header http.Header, reqBo
 	decoder.UseNumber()
 	err = decoder.Decode(resp)
 	if err != nil {
-		log.Error("GetWithUnmarshal.Decode").Msgf("err:%s, url:%s, respData:%s", err, url, string(data))
+		log.Printf("err: %s, url: %s, respData: %s\n", err, url, string(data))
 	}
 	return err
 }

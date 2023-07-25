@@ -2,34 +2,51 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"github.com/Xuanwo/go-locale"
 	"go-live-broadcast-downloader/live-broadcast-downloader/internal"
 	"go-live-broadcast-downloader/plugins/file"
 	cjson "go-live-broadcast-downloader/plugins/json"
+	"go-live-broadcast-downloader/plugins/localization"
+	"golang.org/x/text/language"
 	"log"
+	"os"
+	"strings"
 	"time"
 )
 
 var (
 	platform           string
 	taskDefinitionFile string
+	localeTag          language.Tag
+	err                error
 )
 
-func asobistage(task *internal.Task) error {
-	if err := internal.DownloadFile(task.KeyUrl(), task.SaveTo, task.Spec.KeyName); err != nil {
-		return err
+func init() {
+	localeTag, err = locale.Detect()
+	if err != nil {
+		localeTag = language.English
 	}
-	if err := internal.DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.PlaylistFilename); err != nil {
-		return err
+	l10nDictionary := localization.GetLocalizationDictionary(localeTag)
+
+	flag.StringVar(&platform, "plat", platform, l10nDictionary[localization.KeyPlatform])
+	flag.StringVar(&taskDefinitionFile, "json", taskDefinitionFile, l10nDictionary[localization.KeyTaskDefinitionFile])
+
+	flag.Usage = func() {
+		w := flag.CommandLine.Output()
+		fmt.Fprintf(w, "Usage of %s: %s -plat <asobistage|eplus|zaiko> -json </path/to/config.json>\n", os.Args[0])
+		flag.PrintDefaults()
+		fmt.Fprintf(w, "\n")
+		fmt.Fprintf(w, l10nDictionary[localization.KeyUsage])
 	}
-	return nil
 }
 
 func main() {
-	log.Println("This is a program that downloads live broadcast archives from asobistage, eplus, zaiko and other m3u8-base stream archives.")
-
-	flag.StringVar(&platform, "plat", platform, "Live Broadcast 平台（asobistage, eplus, zaiko）")
-	flag.StringVar(&taskDefinitionFile, "json", taskDefinitionFile, "任务定义文件")
-
+	flag.Parse()
+	if platform == "" && taskDefinitionFile == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
 	if platform == "" {
 		log.Fatal("[error] please specific a platform (asobistage / eplus / zaiko)")
 	}
@@ -37,7 +54,11 @@ func main() {
 		log.Fatal("[error] please specific a path to task config json file")
 	}
 
-	var err error
+	handler := internal.PlatformHandler[strings.ToLower(platform)]
+	if handler == nil {
+		log.Fatalf("platform %s currently not supported\n", platform)
+	}
+
 	tasks := make([]*internal.Task, 0)
 
 	jsonConfigContent := file.ReadFile(taskDefinitionFile)
@@ -49,20 +70,15 @@ func main() {
 		panic(err)
 	}
 
+	st := time.Now()
+	log.Println("This is a program that downloads live broadcast archives from asobistage, eplus, zaiko and other m3u8-base stream archives.")
 	for _, task := range tasks {
 		err = internal.CreateFolder(task.SaveTo)
 		if err != nil {
 			panic(err)
 		}
 		for {
-			err = asobistage(task)
-			if err != nil {
-				log.Printf("Error: %v\n", err)
-				log.Println("Error occurred, restarting...")
-				time.Sleep(time.Second * 5)
-				continue
-			}
-			err = internal.Process(task)
+			err = handler(task)
 			if err != nil {
 				log.Printf("Error: %v\n", err)
 				log.Println("Error occurred, restarting...")
@@ -78,4 +94,7 @@ func main() {
 			log.Printf("Task done with: %v\n", task.Prefix)
 		}
 	}
+
+	et := time.Now()
+	log.Printf("[%s] Done!\n", et.Sub(st))
 }
