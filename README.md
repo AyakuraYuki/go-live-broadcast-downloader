@@ -52,10 +52,4 @@ This is a JSON array that declares a bunch of tasks with:
 5. an optional crypto key filename presents by the m3u8 playlist
 
 Please prepare your own tasks config by using the format we declared.
-
-We are currently not support proxy, just declared the parameter names.
 ```
-
-## TODO
-
-- Download archives through proxy

@@ -8,13 +8,30 @@ import (
 	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/part"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
-func DownloadFile(downloadUrl, saveTo, filename string) error {
-	bs, _, _, err := nhttp.GetRaw(nil, downloadUrl, nil, nil, 60*1000, 2)
+func DownloadFile(downloadUrl, saveTo, filename string, proxy *nhttp.ProxyOption) error {
+	var client *http.Client
+	if proxy != nil {
+		p, err := url.Parse(proxy.ProxyRawUrl())
+		if err != nil {
+			return err
+		}
+		client = &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 2048,
+				IdleConnTimeout:     time.Minute * 5,
+				Proxy:               http.ProxyURL(p),
+			},
+		}
+	}
+	bs, _, _, err := nhttp.GetRaw(client, downloadUrl, nil, nil, 60*1000, 2)
 	if err != nil {
 		return err
 	}
@@ -22,7 +39,7 @@ func DownloadFile(downloadUrl, saveTo, filename string) error {
 	return os.WriteFile(fullPath, bs, os.ModePerm)
 }
 
-func Process(task *Task) error {
+func Process(task *Task, proxy *nhttp.ProxyOption) error {
 	m3u8Path := path.Join(task.SaveTo, task.Spec.Filename)
 	tsLinks := ParseM3U8(m3u8Path)
 	if len(tsLinks) == 0 {
@@ -42,7 +59,7 @@ func Process(task *Task) error {
 					continue
 				}
 				tsUrl := fmt.Sprintf("%s/%s", strings.TrimRight(task.Prefix, "/"), link.Filename)
-				err0 = DownloadFile(tsUrl, task.SaveTo, link.Filename)
+				err0 = DownloadFile(tsUrl, task.SaveTo, link.Filename, proxy)
 			}
 			return err0
 		})

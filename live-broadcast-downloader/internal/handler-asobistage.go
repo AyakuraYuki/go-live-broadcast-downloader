@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
 	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
+	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/typeconvert"
 	"github.com/gorilla/websocket"
 	"log"
@@ -33,20 +34,20 @@ func asobistageTaskValidator(task *Task) error {
 	return nil
 }
 
-func asobistage(task *Task) error {
-	if err := DownloadFile(task.KeyUrl(), task.SaveTo, task.Spec.KeyName); err != nil {
+func asobistage(task *Task, proxy *nhttp.ProxyOption) error {
+	if err := DownloadFile(task.KeyUrl(), task.SaveTo, task.Spec.KeyName, proxy); err != nil {
 		return err
 	} else {
 		log.Printf("[asobistage] download key file successed, file: %s\n", path.Join(task.SaveTo, task.Spec.KeyName))
 	}
 
-	if err := DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename); err != nil {
+	if err := DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename, proxy); err != nil {
 		return err
 	} else {
 		log.Printf("[asobistage] download m3u8 playlist successed, file: %s\n", path.Join(task.SaveTo, task.Spec.Filename))
 	}
 
-	if err := Process(task); err != nil {
+	if err := Process(task, proxy); err != nil {
 		return err
 	} else {
 		log.Printf("[asobistage] successfully download all files in playlist\n")

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
 	"log"
 	"os/exec"
 	"path"
@@ -23,14 +24,14 @@ func zaikoTaskValidator(task *Task) error {
 	return nil
 }
 
-func zaiko(task *Task) error {
-	if err := DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename); err != nil {
+func zaiko(task *Task, proxy *nhttp.ProxyOption) error {
+	if err := DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename, proxy); err != nil {
 		return err
 	} else {
 		log.Printf("[zaiko] download m3u8 playlist successed, file: %s\n", path.Join(task.SaveTo, task.Spec.Filename))
 	}
 
-	if err := Process(task); err != nil {
+	if err := Process(task, proxy); err != nil {
 		return err
 	} else {
 		log.Printf("[zaiko] successfully download all files in playlist\n")

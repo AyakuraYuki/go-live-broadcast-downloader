@@ -22,6 +22,7 @@ const (
 	KeyProxyHost          = "ProxyHost"
 	KeyProxyPort          = "ProxyPort"
 	KeyProxyType          = "ProxyType"
+	KeyVerbose            = "Verbose"
 )
 
 func init() {
@@ -61,6 +62,7 @@ func chinese() map[string]string {
 	dict[KeyProxyHost] = "代理服务器主机地址/IP"
 	dict[KeyProxyPort] = "代理服务器端口"
 	dict[KeyProxyType] = "代理类型（http, https, socks5）"
+	dict[KeyVerbose] = "是否输出详细信息"
 	return dict
 }
 
@@ -95,6 +97,7 @@ We are currently not support proxy, just declared the parameter names.
 	dict[KeyProxyHost] = "Proxy server host or IP address."
 	dict[KeyProxyPort] = "Proxy server port."
 	dict[KeyProxyType] = "Proxy type, available types are [http, https, socks5]."
+	dict[KeyVerbose] = "print more information when running"
 	return dict
 }
 
