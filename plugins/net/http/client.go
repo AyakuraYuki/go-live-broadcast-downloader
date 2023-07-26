@@ -7,7 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	nurl "net/url"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -29,51 +29,25 @@ var (
 	defaultRetryCount = 2
 )
 
-// PostRaw PostRaw
-// params []{"毫秒超时","重试次数"}
-func PostRaw(client *http.Client, url string, header http.Header, reqBody interface{}, params ...int) ([]byte, error) {
-	var (
-		data []byte
-		err  error
-	)
-	timeOut, retryCount := genDefaultParams(params...)
+// PostRaw do http post, returns bytes data, response headers, http code and function error
+// params: []int{timeoutInMillis, retryTimes}
+func PostRaw(client *http.Client, requestUrl string, header http.Header, requestBody interface{}, params ...int) (data []byte, rspHeader http.Header, httpCode int, err error) {
+	timeOut, retryCount := assembleRequestParams(params...)
 	for i := 0; i < retryCount; i++ {
-		data, _, _, err = do(client, http.MethodPost, url, header, reqBody, timeOut)
+		data, rspHeader, httpCode, err = do(client, http.MethodPost, requestUrl, header, requestBody, timeOut)
 		if err == nil {
 			break
 		}
 	}
 	if err != nil {
-		log.Printf("err: %s\n", err)
-	}
-	return data, err
-}
-
-// PostRaw2 PostRaw
-// params []{"毫秒超时","重试次数"}
-func PostRaw2(client *http.Client, url string, header http.Header, reqBody interface{}, params ...int) ([]byte, http.Header, int, error) {
-	var (
-		data      []byte
-		err       error
-		rspHeader http.Header
-		httpCode  int
-	)
-	timeOut, retryCount := genDefaultParams(params...)
-	for i := 0; i < retryCount; i++ {
-		data, rspHeader, httpCode, err = do(client, http.MethodPost, url, header, reqBody, timeOut)
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		log.Printf("err: %s\n", err)
+		log.Printf("PostRaw err: %s\n", err)
 	}
 	return data, rspHeader, httpCode, err
 }
 
-// PostWithUnmarshal do http get with unmarshal
-func PostWithUnmarshal(client *http.Client, url string, header http.Header, reqBody interface{}, resp interface{}, params ...int) error {
-	data, err := PostRaw(client, url, header, reqBody, params...)
+// PostWithUnmarshal do http post with unmarshal
+func PostWithUnmarshal(client *http.Client, requestUrl string, header http.Header, requestBody interface{}, resp interface{}, params ...int) error {
+	data, _, _, err := PostRaw(client, requestUrl, header, requestBody, params...)
 	if err != nil {
 		return err
 	}
@@ -86,53 +60,29 @@ func PostWithUnmarshal(client *http.Client, url string, header http.Header, reqB
 	decoder.UseNumber()
 	err = decoder.Decode(resp)
 	if err != nil {
-		log.Printf("err: %s, url: %s, respData: %s\n", err, url, string(data))
+		log.Printf("PostWithUnmarshal err: %s, requestUrl: %s, respData: %s\n", err, requestUrl, string(data))
 	}
 	return err
 }
 
 // GetRaw get http raw
-func GetRaw(client *http.Client, url string, header http.Header, reqBody interface{}, params ...int) ([]byte, error) {
-	var (
-		data []byte
-		err  error
-	)
-	timeOut, retryCount := genDefaultParams(params...)
+func GetRaw(client *http.Client, requestUrl string, header http.Header, requestBody interface{}, params ...int) (data []byte, rspHeader http.Header, httpCode int, err error) {
+	timeOut, retryCount := assembleRequestParams(params...)
 	for i := 0; i < retryCount; i++ {
-		data, _, _, err = do(client, http.MethodGet, url, header, reqBody, timeOut)
+		data, rspHeader, httpCode, err = do(client, http.MethodGet, requestUrl, header, requestBody, timeOut)
 		if err == nil {
 			break
 		}
 	}
 	if err != nil {
-		log.Printf("err: %s\n", err)
+		log.Printf("GetRaw err: %s\n", err)
 	}
-	return data, err
-}
-
-// Head head 请求
-func Head(client *http.Client, url string, header http.Header, params ...int) (http.Header, int, error) {
-	var (
-		httpStatus int
-		rspHeader  http.Header
-		err        error
-	)
-	timeOut, retryCount := genDefaultParams(params...)
-	for i := 0; i < retryCount; i++ {
-		_, rspHeader, httpStatus, err = do(client, http.MethodHead, url, header, nil, timeOut)
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		log.Printf("err: %s\n", err)
-	}
-	return rspHeader, httpStatus, err
+	return data, rspHeader, httpCode, err
 }
 
 // GetWithUnmarshal do http get with unmarshal
-func GetWithUnmarshal(client *http.Client, url string, header http.Header, reqBody interface{}, resp interface{}, params ...int) error {
-	data, err := GetRaw(client, url, header, reqBody, params...)
+func GetWithUnmarshal(client *http.Client, requestUrl string, header http.Header, requestBody interface{}, resp interface{}, params ...int) error {
+	data, _, _, err := GetRaw(client, requestUrl, header, requestBody, params...)
 	if err != nil {
 		return err
 	}
@@ -145,29 +95,46 @@ func GetWithUnmarshal(client *http.Client, url string, header http.Header, reqBo
 	decoder.UseNumber()
 	err = decoder.Decode(resp)
 	if err != nil {
-		log.Printf("err: %s, url: %s, respData: %s\n", err, url, string(data))
+		log.Printf("GetWithUnmarshal err: %s, requestUrl: %s, respData: %s\n", err, requestUrl, string(data))
 	}
 	return err
 }
 
-func genDefaultParams(params ...int) (int, int) {
-	timeOut, retryCount := defaultTimeout, defaultRetryCount
-	switch {
-	case len(params) >= 2:
-		timeOut, retryCount = params[0], params[1]
-	case len(params) >= 1:
-		timeOut = params[0]
+// Head .
+func Head(client *http.Client, requestUrl string, header http.Header, params ...int) (rspHeader http.Header, httpStatus int, err error) {
+	timeOut, retryCount := assembleRequestParams(params...)
+	for i := 0; i < retryCount; i++ {
+		_, rspHeader, httpStatus, err = do(client, http.MethodHead, requestUrl, header, nil, timeOut)
+		if err == nil {
+			break
+		}
 	}
-	return timeOut, retryCount
+	if err != nil {
+		log.Printf("Head err: %s\n", err)
+	}
+	return rspHeader, httpStatus, err
 }
 
-func do(client *http.Client, method string, url string, header http.Header, reqBody interface{}, timeOut int) ([]byte, http.Header, int, error) {
+func assembleRequestParams(params ...int) (timeout int, retryTimes int) {
+	timeout, retryTimes = defaultTimeout, defaultRetryCount
+	switch {
+	case len(params) >= 2:
+		timeout, retryTimes = params[0], params[1]
+	case len(params) >= 1:
+		timeout = params[0]
+	}
+	return timeout, retryTimes
+}
+
+// do request and returns bytes data, response headers, http code and function error
+func do(client *http.Client, method string, requestUrl string, header http.Header, requestBody interface{}, timeout int) ([]byte, http.Header, int, error) {
 	if client == nil {
 		client = defaultHTTPClient
 	}
+
 	var reader io.Reader
-	switch v := reqBody.(type) {
-	case nurl.Values:
+	switch v := requestBody.(type) {
+	case url.Values:
 		reader = strings.NewReader(v.Encode())
 	case []byte:
 		reader = bytes.NewBuffer(v)
@@ -183,24 +150,30 @@ func do(client *http.Client, method string, url string, header http.Header, reqB
 		}
 		reader = buff
 	}
-	if (method == http.MethodGet || method == http.MethodHead) && reqBody == nil {
+
+	if (method == http.MethodGet || method == http.MethodHead) && requestBody == nil {
 		reader = nil
 	}
-	req, err := http.NewRequest(method, url, reader)
+
+	req, err := http.NewRequest(method, requestUrl, reader)
 	if err != nil {
 		return nil, nil, -1, err
 	}
+
 	if header != nil {
 		req.Header = header
 	}
-	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(timeOut))
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(timeout))
 	defer cancelFunc()
+
 	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, nil, -1, err // TODO maybe should define ctx timeout in package errs
+		return nil, nil, -1, err
 	}
 	defer resp.Body.Close()
+
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, nil, -1, err

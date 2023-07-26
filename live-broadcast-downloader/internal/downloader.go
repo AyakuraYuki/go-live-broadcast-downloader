@@ -14,7 +14,7 @@ import (
 )
 
 func DownloadFile(downloadUrl, saveTo, filename string) error {
-	bs, err := nhttp.GetRaw(nil, downloadUrl, nil, nil, 60*1000, 2)
+	bs, _, _, err := nhttp.GetRaw(nil, downloadUrl, nil, nil, 60*1000, 2)
 	if err != nil {
 		return err
 	}
