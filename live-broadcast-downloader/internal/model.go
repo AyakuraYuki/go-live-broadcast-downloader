@@ -1,10 +1,8 @@
 package internal
 
 import (
-	"fmt"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/urls"
 	"log"
-	"net/url"
 	"strings"
 )
 
@@ -84,18 +82,4 @@ func (t *TSLink) parseFilename() {
 	} else {
 		t.Filename = t.BaseUrl
 	}
-}
-
-type ProxyOption struct {
-	Host      string `json:"host"`
-	Port      int    `json:"port"`
-	ProxyType string `json:"proxyType"`
-}
-
-func (t *ProxyOption) GetProxyServer() string {
-	u := url.URL{
-		Scheme: t.ProxyType,
-		Host:   fmt.Sprintf("%s:%d", t.Host, t.Port),
-	}
-	return u.String()
 }

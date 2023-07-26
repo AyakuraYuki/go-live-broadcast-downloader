@@ -3,6 +3,7 @@ package nhttp
 import (
 	"bytes"
 	"context"
+	"fmt"
 	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
 	"io"
 	"log"
@@ -29,12 +30,61 @@ var (
 	defaultRetryCount = 2
 )
 
+// ========================================================================================================================
+// Proxy
+
+const (
+	SOCKS5 = "socks5"
+	HTTPS  = "https"
+	HTTP   = "http"
+)
+
+type ProxyOption struct {
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	ProxyType string `json:"proxyType"`
+}
+
+func (t *ProxyOption) ProxyRawUrl() string {
+	u := url.URL{
+		Scheme: t.ProxyType,
+		Host:   fmt.Sprintf("%s:%d", t.Host, t.Port),
+	}
+	return u.String()
+}
+
+func MatchProxy(proxyType string) string {
+	if proxyType == "" {
+		return ""
+	}
+	types := []string{SOCKS5, HTTPS, HTTP}
+	for _, v := range types {
+		if proxyType == v {
+			return v
+		}
+	}
+	return ""
+}
+
+// ========================================================================================================================
+
+func assembleRequestParams(params ...int) (timeout int, retry int) {
+	timeout, retry = defaultTimeout, defaultRetryCount
+	switch {
+	case len(params) >= 2:
+		timeout, retry = params[0], params[1]
+	case len(params) >= 1:
+		timeout = params[0]
+	}
+	return timeout, retry
+}
+
 // PostRaw do http post, returns bytes data, response headers, http code and function error
 // params: []int{timeoutInMillis, retryTimes}
 func PostRaw(client *http.Client, requestUrl string, header http.Header, requestBody interface{}, params ...int) (data []byte, rspHeader http.Header, httpCode int, err error) {
-	timeOut, retryCount := assembleRequestParams(params...)
-	for i := 0; i < retryCount; i++ {
-		data, rspHeader, httpCode, err = do(client, http.MethodPost, requestUrl, header, requestBody, timeOut)
+	timeout, retry := assembleRequestParams(params...)
+	for i := 0; i < retry; i++ {
+		data, rspHeader, httpCode, err = do(client, http.MethodPost, requestUrl, header, requestBody, timeout)
 		if err == nil {
 			break
 		}
@@ -67,9 +117,9 @@ func PostWithUnmarshal(client *http.Client, requestUrl string, header http.Heade
 
 // GetRaw get http raw
 func GetRaw(client *http.Client, requestUrl string, header http.Header, requestBody interface{}, params ...int) (data []byte, rspHeader http.Header, httpCode int, err error) {
-	timeOut, retryCount := assembleRequestParams(params...)
-	for i := 0; i < retryCount; i++ {
-		data, rspHeader, httpCode, err = do(client, http.MethodGet, requestUrl, header, requestBody, timeOut)
+	timeout, retry := assembleRequestParams(params...)
+	for i := 0; i < retry; i++ {
+		data, rspHeader, httpCode, err = do(client, http.MethodGet, requestUrl, header, requestBody, timeout)
 		if err == nil {
 			break
 		}
@@ -102,9 +152,9 @@ func GetWithUnmarshal(client *http.Client, requestUrl string, header http.Header
 
 // Head .
 func Head(client *http.Client, requestUrl string, header http.Header, params ...int) (rspHeader http.Header, httpStatus int, err error) {
-	timeOut, retryCount := assembleRequestParams(params...)
-	for i := 0; i < retryCount; i++ {
-		_, rspHeader, httpStatus, err = do(client, http.MethodHead, requestUrl, header, nil, timeOut)
+	timeout, retry := assembleRequestParams(params...)
+	for i := 0; i < retry; i++ {
+		_, rspHeader, httpStatus, err = do(client, http.MethodHead, requestUrl, header, nil, timeout)
 		if err == nil {
 			break
 		}
@@ -113,17 +163,6 @@ func Head(client *http.Client, requestUrl string, header http.Header, params ...
 		log.Printf("Head err: %s\n", err)
 	}
 	return rspHeader, httpStatus, err
-}
-
-func assembleRequestParams(params ...int) (timeout int, retryTimes int) {
-	timeout, retryTimes = defaultTimeout, defaultRetryCount
-	switch {
-	case len(params) >= 2:
-		timeout, retryTimes = params[0], params[1]
-	case len(params) >= 1:
-		timeout = params[0]
-	}
-	return timeout, retryTimes
 }
 
 // do request and returns bytes data, response headers, http code and function error
@@ -166,8 +205,8 @@ func do(client *http.Client, method string, requestUrl string, header http.Heade
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(timeout))
 	defer cancelFunc()
-
 	req = req.WithContext(ctx)
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, nil, -1, err

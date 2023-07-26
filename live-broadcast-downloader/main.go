@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/consts"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
 	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/localization"
+	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
 	"github.com/Xuanwo/go-locale"
 	"golang.org/x/text/language"
 	"log"
@@ -34,22 +34,22 @@ func init() {
 	}
 	l10nDictionary := localization.GetLocalizationDictionary(localeTag)
 
-	flag.StringVar(&platform, "p", platform, l10nDictionary[localization.KeyPlatform])
-	flag.StringVar(&platform, "plat", platform, l10nDictionary[localization.KeyPlatform])
+	flag.StringVar(&platform, "p", "", l10nDictionary[localization.KeyPlatform])
+	flag.StringVar(&platform, "plat", "", l10nDictionary[localization.KeyPlatform])
 
-	flag.StringVar(&taskDefinitionFile, "c", taskDefinitionFile, l10nDictionary[localization.KeyTaskDefinitionFile])
-	flag.StringVar(&taskDefinitionFile, "config", taskDefinitionFile, l10nDictionary[localization.KeyTaskDefinitionFile])
+	flag.StringVar(&taskDefinitionFile, "c", "", l10nDictionary[localization.KeyTaskDefinitionFile])
+	flag.StringVar(&taskDefinitionFile, "config", "", l10nDictionary[localization.KeyTaskDefinitionFile])
 
 	flag.StringVar(&proxyHost, "proxy_host", "127.0.0.1", l10nDictionary[localization.KeyProxyHost])
 	flag.IntVar(&proxyPort, "proxy_port", 7890, l10nDictionary[localization.KeyProxyPort])
-	flag.StringVar(&proxyType, "proxy_type", "127.0.0.1", l10nDictionary[localization.KeyProxyType])
+	flag.StringVar(&proxyType, "proxy_type", "", l10nDictionary[localization.KeyProxyType])
 
 	flag.Usage = func() {
 		w := flag.CommandLine.Output()
-		fmt.Fprintf(w, "Usage of %s: %s -p <asobistage|eplus|zaiko> -c </path/to/config.json>\n", os.Args[0], os.Args[0])
+		_, _ = fmt.Fprintf(w, "Usage of %s: %s -p <asobistage|eplus|zaiko> -c </path/to/config.json>\n", os.Args[0], os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprintf(w, "\n")
-		fmt.Fprintf(w, l10nDictionary[localization.KeyUsage])
+		_, _ = fmt.Fprintf(w, "\n")
+		_, _ = fmt.Fprintf(w, l10nDictionary[localization.KeyUsage])
 	}
 }
 
@@ -64,7 +64,12 @@ func validateFlags() {
 	if taskDefinitionFile == "" {
 		log.Fatal("[error] please specific a path to task config json file")
 	}
-	if proxyType != "" && consts.MatchProxy(proxyType) == "" {
+
+	// validate proxy flags
+	if proxyType == "" {
+		return // without proxy
+	}
+	if nhttp.MatchProxy(proxyType) == "" {
 		log.Fatal("[error] we are not support the proxy type that you presented, you can only use socks5, https or http proxy")
 	}
 }
