@@ -7,7 +7,7 @@ import (
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/misc"
 	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/part"
-	"log"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/verbose"
 	"net/http"
 	"net/url"
 	"os"
@@ -46,6 +46,19 @@ func Process(task *Task, proxy *nhttp.ProxyOption) error {
 		return errors.New("empty playlist")
 	}
 
+	taskAmount := len(tsLinks)
+	counterChan := make(chan bool)
+	defer close(counterChan)
+	if verbose.Verbose {
+		counter := uint64(0)
+		go func() {
+			for range counterChan {
+				counter += 1
+				fmt.Printf("downloading [%v / %v] \r", counter, taskAmount)
+			}
+		}()
+	}
+
 	funcs := make([]misc.WorkFunc, 0)
 	for indexRange := range part.Partition(len(tsLinks), 500) {
 		bulkLinks := tsLinks[indexRange.Low:indexRange.High]
@@ -55,11 +68,15 @@ func Process(task *Task, proxy *nhttp.ProxyOption) error {
 				tsPath := path.Join(task.SaveTo, link.Filename)
 				exist, _ := file.IsPathExist(tsPath)
 				if exist {
-					log.Printf("skipped exist file: %s", link.Filename)
+					verbose.Printf("skipped exist file: %s", link.Filename)
+					counterChan <- true
 					continue
 				}
 				tsUrl := fmt.Sprintf("%s/%s", strings.TrimRight(task.Prefix, "/"), link.Filename)
 				err0 = DownloadFile(tsUrl, task.SaveTo, link.Filename, proxy)
+				if err0 == nil {
+					counterChan <- true
+				}
 			}
 			return err0
 		})
@@ -98,6 +115,6 @@ func CreateFolder(path string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("path created at %s\n", path)
+	verbose.Printf("path created at %s\n", path)
 	return nil
 }
