@@ -54,8 +54,6 @@ func chinese() map[string]string {
 5. 一个可选的加密解密文件的文件名，你能在 m3u8 文件内容中找到他
 
 请遵循上面的声明，准备好你自己任务配置文件。
-
-目前来说我们还不支持使用代理，仅仅只是定义了 CLI 参数名称。
 `
 	dict[KeyPlatform] = "Live Broadcast 平台名称（asobistage, eplus, zaiko）"
 	dict[KeyTaskDefinitionFile] = "任务定义文件的绝对路径"
@@ -89,8 +87,6 @@ This is a JSON array that declares a bunch of tasks with:
 5. an optional crypto key filename presents by the m3u8 playlist
 
 Please prepare your own tasks config by using the format we declared.
-
-We are currently not support proxy, just declared the parameter names.
 `
 	dict[KeyPlatform] = "The name of Live Broadcast Platform, available values are [asobistage, eplus, zaiko]."
 	dict[KeyTaskDefinitionFile] = "An absolute path of your task declaration JSON file."
