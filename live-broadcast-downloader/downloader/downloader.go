@@ -1,8 +1,11 @@
-package internal
+package downloader
 
 import (
 	"errors"
 	"fmt"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/env"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/tools"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/misc"
 	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
@@ -39,28 +42,29 @@ func DownloadFile(downloadUrl, saveTo, filename string, proxy *nhttp.ProxyOption
 	return os.WriteFile(fullPath, bs, os.ModePerm)
 }
 
-func Process(task *Task, proxy *nhttp.ProxyOption) error {
+func Process(task *model.Task, proxy *nhttp.ProxyOption) error {
 	m3u8Path := path.Join(task.SaveTo, task.Spec.Filename)
-	tsLinks := ParseM3U8(m3u8Path)
+	tsLinks := tools.ParseM3U8(m3u8Path)
 	if len(tsLinks) == 0 {
 		return errors.New("empty playlist")
 	}
 
 	taskAmount := len(tsLinks)
+	partitionSize := taskAmount / env.Coroutines
 	counterChan := make(chan bool)
 	defer close(counterChan)
-	if verbose.Verbose {
-		counter := uint64(0)
-		go func() {
-			for range counterChan {
-				counter += 1
+	counter := uint64(0)
+	go func() {
+		for range counterChan {
+			counter += 1
+			if verbose.Verbose {
 				fmt.Printf("downloading [%v / %v] \r", counter, taskAmount)
 			}
-		}()
-	}
+		}
+	}()
 
 	funcs := make([]misc.WorkFunc, 0)
-	for indexRange := range part.Partition(len(tsLinks), 500) {
+	for indexRange := range part.Partition(len(tsLinks), partitionSize) {
 		bulkLinks := tsLinks[indexRange.Low:indexRange.High]
 		funcs = append(funcs, func() error {
 			var err0 error
@@ -84,37 +88,5 @@ func Process(task *Task, proxy *nhttp.ProxyOption) error {
 	if err := misc.MultiRun(funcs...); err != nil {
 		return err
 	}
-	return nil
-}
-
-// misc...
-
-func ParseM3U8(filename string) []*TSLink {
-	res := make([]*TSLink, 0)
-	lines := file.ReadLines(filename)
-	if len(lines) == 0 {
-		return res
-	}
-	for _, line := range lines {
-		if strings.Contains(line, ".ts") {
-			res = append(res, NewTSLink(line))
-		}
-	}
-	return res
-}
-
-func CreateFolder(path string) error {
-	exist, err := file.IsPathExist(path)
-	if err != nil {
-		return err
-	}
-	if exist {
-		return nil
-	}
-	err = os.MkdirAll(path, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	verbose.Printf("path created at %s\n", path)
 	return nil
 }

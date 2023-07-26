@@ -1,8 +1,10 @@
-package internal
+package handler
 
 import (
 	"errors"
 	"fmt"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/downloader"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
 	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
 	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
@@ -15,7 +17,7 @@ import (
 	"regexp"
 )
 
-func asobistageTaskValidator(task *Task) error {
+func asobistageTaskValidator(task *model.Task) error {
 	if task.Prefix == "" {
 		return errors.New("missing prefix")
 	}
@@ -34,20 +36,20 @@ func asobistageTaskValidator(task *Task) error {
 	return nil
 }
 
-func asobistage(task *Task, proxy *nhttp.ProxyOption) error {
-	if err := DownloadFile(task.KeyUrl(), task.SaveTo, task.Spec.KeyName, proxy); err != nil {
+func asobistage(task *model.Task, proxy *nhttp.ProxyOption) error {
+	if err := downloader.DownloadFile(task.KeyUrl(), task.SaveTo, task.Spec.KeyName, proxy); err != nil {
 		return err
 	} else {
 		log.Printf("[asobistage] download key file successed, file: %s\n", path.Join(task.SaveTo, task.Spec.KeyName))
 	}
 
-	if err := DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename, proxy); err != nil {
+	if err := downloader.DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename, proxy); err != nil {
 		return err
 	} else {
 		log.Printf("[asobistage] download m3u8 playlist successed, file: %s\n", path.Join(task.SaveTo, task.Spec.Filename))
 	}
 
-	if err := Process(task, proxy); err != nil {
+	if err := downloader.Process(task, proxy); err != nil {
 		return err
 	} else {
 		log.Printf("[asobistage] successfully download all files in playlist\n")
@@ -67,7 +69,7 @@ func asobistage(task *Task, proxy *nhttp.ProxyOption) error {
 	return nil
 }
 
-func asobistageComments(task *Task) {
+func asobistageComments(task *model.Task) {
 	if task.PageUrl == "" {
 		return
 	}

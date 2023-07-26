@@ -22,6 +22,7 @@ const (
 	KeyProxyHost          = "ProxyHost"
 	KeyProxyPort          = "ProxyPort"
 	KeyProxyType          = "ProxyType"
+	KeyCoroutines         = "Coroutines"
 	KeyVerbose            = "Verbose"
 )
 
@@ -60,6 +61,7 @@ func chinese() map[string]string {
 	dict[KeyProxyHost] = "代理服务器主机地址/IP"
 	dict[KeyProxyPort] = "代理服务器端口"
 	dict[KeyProxyType] = "代理类型（http, https, socks5）"
+	dict[KeyCoroutines] = "下载任务组的数量"
 	dict[KeyVerbose] = "是否输出详细信息"
 	return dict
 }
@@ -93,6 +95,7 @@ Please prepare your own tasks config by using the format we declared.
 	dict[KeyProxyHost] = "Proxy server host or IP address."
 	dict[KeyProxyPort] = "Proxy server port."
 	dict[KeyProxyType] = "Proxy type, available types are [http, https, socks5]."
+	dict[KeyCoroutines] = "Declare the number of download threads"
 	dict[KeyVerbose] = "print more information when running"
 	return dict
 }

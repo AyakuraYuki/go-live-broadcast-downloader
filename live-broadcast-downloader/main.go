@@ -3,7 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/env"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/handler"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/tools"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
 	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/localization"
@@ -17,34 +20,26 @@ import (
 	"time"
 )
 
-var (
-	platform           string
-	taskDefinitionFile string
-	proxyHost          string
-	proxyPort          int
-	proxyType          string
-
-	localeTag language.Tag
-	err       error
-)
-
 func init() {
-	localeTag, err = locale.Detect()
+	var err error
+
+	env.LocaleTag, err = locale.Detect()
 	if err != nil {
-		localeTag = language.English
+		env.LocaleTag = language.English
 	}
-	l10nDictionary := localization.GetLocalizationDictionary(localeTag)
+	l10nDictionary := localization.GetLocalizationDictionary(env.LocaleTag)
 
-	flag.StringVar(&platform, "p", "", l10nDictionary[localization.KeyPlatform])
-	flag.StringVar(&platform, "plat", "", l10nDictionary[localization.KeyPlatform])
+	flag.StringVar(&env.Platform, "p", "", l10nDictionary[localization.KeyPlatform])
+	flag.StringVar(&env.Platform, "plat", "", l10nDictionary[localization.KeyPlatform])
 
-	flag.StringVar(&taskDefinitionFile, "c", "", l10nDictionary[localization.KeyTaskDefinitionFile])
-	flag.StringVar(&taskDefinitionFile, "config", "", l10nDictionary[localization.KeyTaskDefinitionFile])
+	flag.StringVar(&env.TaskDefinitionFile, "c", "", l10nDictionary[localization.KeyTaskDefinitionFile])
+	flag.StringVar(&env.TaskDefinitionFile, "config", "", l10nDictionary[localization.KeyTaskDefinitionFile])
 
-	flag.StringVar(&proxyHost, "proxy_host", "127.0.0.1", l10nDictionary[localization.KeyProxyHost])
-	flag.IntVar(&proxyPort, "proxy_port", 7890, l10nDictionary[localization.KeyProxyPort])
-	flag.StringVar(&proxyType, "proxy_type", "", l10nDictionary[localization.KeyProxyType])
+	flag.StringVar(&env.ProxyHost, "proxy_host", "127.0.0.1", l10nDictionary[localization.KeyProxyHost])
+	flag.IntVar(&env.ProxyPort, "proxy_port", 7890, l10nDictionary[localization.KeyProxyPort])
+	flag.StringVar(&env.ProxyType, "proxy_type", "", l10nDictionary[localization.KeyProxyType])
 
+	flag.IntVar(&env.Coroutines, "threads", 10, l10nDictionary[localization.KeyCoroutines])
 	flag.BoolVar(&verbose.Verbose, "verbose", false, l10nDictionary[localization.KeyVerbose])
 
 	flag.Usage = func() {
@@ -56,48 +51,29 @@ func init() {
 	}
 }
 
-func validateFlags() {
-	if platform == "" && taskDefinitionFile == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
-	if platform == "" {
-		log.Fatal("[error] please specific a platform (asobistage / eplus / zaiko)")
-	}
-	if taskDefinitionFile == "" {
-		log.Fatal("[error] please specific a path to task config json file")
-	}
-
-	// validate proxy flags
-	if proxyType == "" {
-		return // without proxy
-	}
-	if nhttp.MatchProxy(proxyType) == "" {
-		log.Fatal("[error] we are not support the proxy type that you presented, you can only use socks5, https or http proxy")
-	}
-}
-
 func main() {
 	flag.Parse()
-	validateFlags()
+	tools.ValidateFlags()
+
+	var err error
 
 	var proxyOption *nhttp.ProxyOption
-	if proxyType != "" {
+	if env.ProxyType != "" {
 		proxyOption = &nhttp.ProxyOption{
-			Host:      proxyHost,
-			Port:      proxyPort,
-			ProxyType: proxyType,
+			Host:      env.ProxyHost,
+			Port:      env.ProxyPort,
+			ProxyType: env.ProxyType,
 		}
 	}
 
-	platformHandler := internal.PlatformHandler[strings.ToLower(platform)]
+	platformHandler := handler.PlatformHandler[strings.ToLower(env.Platform)]
 	if platformHandler == nil {
-		log.Fatalf("platform %s currently not supported\n", platform)
+		log.Fatalf("platform %s currently not supported\n", env.Platform)
 	}
 
-	tasks := make([]*internal.Task, 0)
+	tasks := make([]*model.Task, 0)
 
-	jsonConfigContent := file.ReadFile(taskDefinitionFile)
+	jsonConfigContent := file.ReadFile(env.TaskDefinitionFile)
 	if jsonConfigContent == "" {
 		log.Fatal("[error] empty config content, exit")
 	}
@@ -106,7 +82,7 @@ func main() {
 		panic(err)
 	}
 	// validate
-	taskValidator := internal.TaskValidator[strings.ToLower(platform)]
+	taskValidator := handler.TaskValidator[strings.ToLower(env.Platform)]
 	for _, task := range tasks {
 		if taskValidator != nil {
 			err = taskValidator(task)
@@ -117,7 +93,7 @@ func main() {
 	}
 
 	log.Println("This is a program that downloads live broadcast archives from asobistage, eplus, zaiko and other m3u8-base stream archives.")
-	verbose.Printf("Platform: %s\n", platform)
+	verbose.Printf("Platform: %s\n", env.Platform)
 	verbose.Println("Tasks:")
 	for _, task := range tasks {
 		verbose.Printf("    - save to: %s\n", task.SaveTo)
@@ -131,7 +107,7 @@ func main() {
 	st := time.Now()
 	for _, task := range tasks {
 		// create dist dir
-		err = internal.CreateFolder(task.SaveTo)
+		err = tools.CreateFolder(task.SaveTo)
 		if err != nil {
 			panic(err)
 		}
@@ -147,7 +123,7 @@ func main() {
 			break
 		}
 		// check downloaded resources
-		err = internal.ValidateArchive(task.SaveTo)
+		err = tools.ValidateArchive(task.SaveTo)
 		if err != nil {
 			log.Printf("Validate failed: %v\n", err)
 		} else {

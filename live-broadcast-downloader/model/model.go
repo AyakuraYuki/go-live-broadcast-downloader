@@ -1,4 +1,4 @@
-package internal
+package model
 
 import (
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/urls"
