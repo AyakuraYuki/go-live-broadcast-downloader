@@ -45,7 +45,7 @@ func init() {
 
 	flag.Usage = func() {
 		w := flag.CommandLine.Output()
-		_, _ = fmt.Fprintf(w, "Usage of %s: %s -p <asobistage|eplus|zaiko> -c </path/to/config.json>\n", os.Args[0], os.Args[0])
+		_, _ = fmt.Fprintf(w, "Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
 		_, _ = fmt.Fprintf(w, "\n")
 		_, _ = fmt.Fprintf(w, l10nDictionary[localization.KeyUsage])

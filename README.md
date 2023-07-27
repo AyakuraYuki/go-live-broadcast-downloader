@@ -15,7 +15,7 @@ This program does not use webdriver or any other headless browser. I made it dow
 First thing first, you should have installed FFMpeg, we will merge the archive by using FFMpeg as soon as the archive clips downloaded.
 
 ```text
-Usage of ./live-broadcast-downloader: ./live-broadcast-downloader -p <asobistage|eplus|zaiko> -c </path/to/config.json>
+Usage of ./live-broadcast-downloader:
   -c string
         An absolute path of your task declaration JSON file.
   -config string
@@ -29,7 +29,13 @@ Usage of ./live-broadcast-downloader: ./live-broadcast-downloader -p <asobistage
   -proxy_port int
         Proxy server port. (default 7890)
   -proxy_type string
-        Proxy type, available types are [http, https, socks5]. (default "127.0.0.1")
+        Proxy type, available types are [http, https, socks5].
+  -retry int
+        max retry times for each task (default 10)
+  -threads int
+        Declare the number of download threads (default 10)
+  -verbose
+        print more information when running
 
 The JSON configuration should be like the following text:
 [
