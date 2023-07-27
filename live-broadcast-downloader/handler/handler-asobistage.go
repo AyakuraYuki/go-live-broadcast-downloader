@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/downloader"
@@ -9,6 +10,7 @@ import (
 	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
 	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/typeconvert"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/verbose"
 	"github.com/gorilla/websocket"
 	"log"
 	"os"
@@ -58,9 +60,16 @@ func asobistage(task *model.Task, proxy *nhttp.ProxyOption) error {
 	// merge clips
 	m3u8Path := path.Join(task.SaveTo, task.Spec.Filename)
 	videoPath := path.Join(task.SaveTo, "output.mp4")
-	cmd := exec.Command("ffmpeg", "-allowed_extensions", "ALL", "-i", m3u8Path, "-c", "copy", videoPath)
+	cmd := exec.Command("ffmpeg", "-allowed_extensions", "ALL", "-y", "-i", m3u8Path, "-c", "copy", videoPath)
+	var cmdOut, cmdErr bytes.Buffer
+	cmd.Stdout = &cmdOut
+	cmd.Stderr = &cmdErr
 	if err := cmd.Run(); err != nil {
+		verbose.Println(cmdErr.String())
 		return err
+	} else {
+		verbose.Println(cmdOut.String())
+		verbose.Println(cmdErr.String())
 	}
 
 	// download comments

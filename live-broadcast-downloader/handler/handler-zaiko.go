@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"bytes"
 	"errors"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/downloader"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
 	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/verbose"
 	"log"
 	"os/exec"
 	"path"
@@ -42,9 +44,16 @@ func zaiko(task *model.Task, proxy *nhttp.ProxyOption) error {
 	// merge clips
 	m3u8Path := path.Join(task.SaveTo, task.Spec.Filename)
 	videoPath := path.Join(task.SaveTo, "output.mp4")
-	cmd := exec.Command("ffmpeg", "-i", m3u8Path, "-c", "copy", videoPath)
+	cmd := exec.Command("ffmpeg", "-y", "-i", m3u8Path, "-c", "copy", videoPath)
+	var cmdOut, cmdErr bytes.Buffer
+	cmd.Stdout = &cmdOut
+	cmd.Stderr = &cmdErr
 	if err := cmd.Run(); err != nil {
+		verbose.Println(cmdErr.String())
 		return err
+	} else {
+		verbose.Println(cmdOut.String())
+		verbose.Println(cmdErr.String())
 	}
 
 	return nil
