@@ -40,7 +40,7 @@ func CreateFolder(path string) error {
 	if err != nil {
 		return err
 	}
-	verbose.Printf("path created at %s\n", path)
+	verbose.Printf("path created at %s", path)
 	return nil
 }
 

@@ -10,4 +10,5 @@ var (
 	ProxyType          string
 	Coroutines         int
 	LocaleTag          language.Tag
+	MaxRetry           int
 )

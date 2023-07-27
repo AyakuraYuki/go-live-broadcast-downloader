@@ -40,6 +40,7 @@ func init() {
 	flag.StringVar(&env.ProxyType, "proxy_type", "", l10nDictionary[localization.KeyProxyType])
 
 	flag.IntVar(&env.Coroutines, "threads", 10, l10nDictionary[localization.KeyCoroutines])
+	flag.IntVar(&env.MaxRetry, "retry", 10, l10nDictionary[localization.KeyMaxRetry])
 	flag.BoolVar(&verbose.Verbose, "verbose", false, l10nDictionary[localization.KeyVerbose])
 
 	flag.Usage = func() {
@@ -93,14 +94,14 @@ func main() {
 	}
 
 	log.Println("This is a program that downloads live broadcast archives from asobistage, eplus, zaiko and other m3u8-base stream archives.")
-	verbose.Printf("Platform: %s\n", env.Platform)
+	verbose.Printf("Platform: %s", env.Platform)
 	verbose.Println("Tasks:")
 	for _, task := range tasks {
-		verbose.Printf("    - save to: %s\n", task.SaveTo)
-		verbose.Printf("    - page url: %s\n", task.PageUrl)
-		verbose.Printf("    - m3u8: %s\n", task.M3U8Url())
+		verbose.Printf("    - save to: %s", task.SaveTo)
+		verbose.Printf("    - page url: %s", task.PageUrl)
+		verbose.Printf("    - m3u8: %s", task.M3U8Url())
 		if task.Spec.KeyName != "" {
-			verbose.Printf("    - key file: %s\n", task.KeyUrl())
+			verbose.Printf("    - key file: %s", task.KeyUrl())
 		}
 	}
 
@@ -112,16 +113,31 @@ func main() {
 			panic(err)
 		}
 		// download...
+		retry := 0
+		hitRetryLimit := false
 		for {
+			if retry > env.MaxRetry {
+				hitRetryLimit = true
+				break
+			}
 			err = platformHandler(task, proxyOption)
 			if err != nil {
-				verbose.Printf("Error: %v\n", err)
+				verbose.Printf("Error: %v", err)
 				log.Println("Error occurred, restarting...")
 				time.Sleep(time.Second * 5)
+				retry++
 				continue
 			}
 			break
 		}
+
+		// if hit retry limit, skip current task without validating resources
+		if hitRetryLimit {
+			bs, _ := cjson.JSON.Marshal(task)
+			log.Printf("Task hits retry limit, skipped. Task detail: %s\n", string(bs))
+			continue
+		}
+
 		// check downloaded resources
 		err = tools.ValidateArchive(task.SaveTo)
 		if err != nil {
