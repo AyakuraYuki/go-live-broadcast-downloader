@@ -8,9 +8,9 @@ var usageL10N map[language.Tag]map[string]string
 
 var (
 	languageSupport = []language.Tag{
+		language.English,
 		language.Chinese,
 		language.SimplifiedChinese,
-		language.English,
 	}
 	languageMatcher = language.NewMatcher(languageSupport)
 )
