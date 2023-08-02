@@ -27,7 +27,8 @@ func init() {
 	if err != nil {
 		env.LocaleTag = language.English
 	}
-	l10nDictionary := localization.GetLocalizationDictionary(env.LocaleTag)
+	localization.RegisterTag(env.LocaleTag)
+	l10nDictionary := localization.GetLocalizationDictionary()
 
 	flag.StringVar(&env.Platform, "p", "", l10nDictionary[localization.KeyPlatform])
 	flag.StringVar(&env.Platform, "plat", "", l10nDictionary[localization.KeyPlatform])
