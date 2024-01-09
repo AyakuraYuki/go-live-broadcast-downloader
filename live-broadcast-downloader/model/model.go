@@ -10,6 +10,7 @@ import (
 type M3U8Spec struct {
 	Filename string `json:"filename"`
 	KeyName  string `json:"keyName"`
+	RawQuery string `json:"rawQuery"`
 }
 
 // Task declares the download task
@@ -42,6 +43,9 @@ func (t *Task) M3U8Url() string {
 		m3u8Url.WriteString("/")
 	}
 	m3u8Url.WriteString(t.Spec.Filename)
+	if t.Spec.RawQuery != "" {
+		m3u8Url.WriteString("?" + t.Spec.RawQuery)
+	}
 	return m3u8Url.String()
 }
 

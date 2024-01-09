@@ -11,6 +11,7 @@ func chinese() map[string]string {
         "spec": {
             "filename": "index.m3u8",
             "keyName": "aes128.key"
+			"rawQuery": "<m3u8链接的Get请求参数的QueryString>"
         }
     }
 ]
@@ -21,10 +22,11 @@ func chinese() map[string]string {
 3. 视频播放页面的地址
 4. 归档视频的解析度文件，一般不同的 m3u8 文件代表了不同的解析度，应该填写 m3u8 的文件名
 5. 一个可选的加密解密文件的文件名，你能在 m3u8 文件内容中找到他
+6. 一些 m3u8 文件链接需要认证，这些认证如果是通过 QueryString 传递的，你应该把这个 QueryString 的原数据配置到 "spec.rawQuery" 上
 
 请遵循上面的声明，准备好你自己任务配置文件。
 `
-	dict[KeyPlatform] = "Live Broadcast 平台名称（asobistage, eplus, zaiko）"
+	dict[KeyPlatform] = "Live Broadcast 平台名称（asobistage, eplus, zaiko, streampass）"
 	dict[KeyTaskDefinitionFile] = "任务定义文件的绝对路径"
 	dict[KeyProxyHost] = "代理服务器主机地址/IP"
 	dict[KeyProxyPort] = "代理服务器端口"

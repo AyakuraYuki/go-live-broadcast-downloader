@@ -10,7 +10,8 @@ func english() map[string]string {
         "pageUrl": "https://live-broadcast-platform.host/link/to/archive/page-url",
         "spec": {
             "filename": "index.m3u8",
-            "keyName": "aes128.key"
+            "keyName": "aes128.key",
+			"rawQuery": "<raw_query_string_from_m3u8_link>"
         }
     }
 ]
@@ -21,10 +22,11 @@ This is a JSON array that declares a bunch of tasks with:
 3. the archive page URL link
 4. which archive resolution spec that you want to download
 5. an optional crypto key filename presents by the m3u8 playlist
+6. some m3u8 playlist link requires auth token, if that token passed by query string, you should copy the raw query string to "spec.rawQuery"
 
 Please prepare your own tasks config by using the format we declared.
 `
-	dict[KeyPlatform] = "The name of Live Broadcast Platform, available values are [asobistage, eplus, zaiko]."
+	dict[KeyPlatform] = "The name of Live Broadcast Platform, available values are [asobistage, eplus, zaiko, streampass]."
 	dict[KeyTaskDefinitionFile] = "An absolute path of your task declaration JSON file."
 	dict[KeyProxyHost] = "Proxy server host or IP address."
 	dict[KeyProxyPort] = "Proxy server port."
