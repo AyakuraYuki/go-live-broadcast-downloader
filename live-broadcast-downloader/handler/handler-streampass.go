@@ -3,8 +3,10 @@ package handler
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/downloader"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
+	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
 	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/verbose"
 	"log"
@@ -12,24 +14,38 @@ import (
 	"path"
 )
 
+func streampassTaskExample() string {
+	task := &model.Task{
+		Prefix: "https://xxx.cloudfront.net/path/to/stream/",
+		SaveTo: "/path/to/save",
+		Spec: &model.M3U8Spec{
+			Filename: "index_6m.m3u8",
+			KeyName:  "aes128.key",
+			RawQuery: "__token=xxxxxx",
+		},
+	}
+	bs, _ := cjson.JSON.MarshalIndent(task, "", "    ")
+	return fmt.Sprintf("\n( example: \n%s \n)", string(bs))
+}
+
 func streampassTaskValidator(task *model.Task) error {
 	if task.Prefix == "" {
-		return errors.New("missing prefix")
+		return errors.New("missing prefix" + streampassTaskExample())
 	}
 	if task.SaveTo == "" {
-		return errors.New("we don't know where you want to save the archive")
+		return errors.New("we don't know where you want to save the archive" + streampassTaskExample())
 	}
 	if task.Spec == nil {
-		return errors.New("missing spec")
+		return errors.New("missing spec" + streampassTaskExample())
 	}
 	if task.Spec.KeyName == "" {
-		return errors.New("streampass requires a key file to handle crypto *.ts data")
+		return errors.New("streampass requires a key file to handle crypto *.ts data" + streampassTaskExample())
 	}
 	if task.Spec.Filename == "" {
-		return errors.New("missing m3u8 filename")
+		return errors.New("missing m3u8 filename" + streampassTaskExample())
 	}
 	if task.Spec.RawQuery == "" {
-		return errors.New("missing m3u8 query string, StreamPass required token to get *.m3u8 file")
+		return errors.New("missing m3u8 query string, StreamPass required token to get *.m3u8 file" + streampassTaskExample())
 	}
 	return nil
 }

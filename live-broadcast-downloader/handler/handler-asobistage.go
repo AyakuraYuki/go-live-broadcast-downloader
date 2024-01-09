@@ -19,21 +19,34 @@ import (
 	"regexp"
 )
 
+func asobistageTaskExample() string {
+	task := &model.Task{
+		Prefix: "https://xxx.cloudfront.net/path/to/stream/",
+		SaveTo: "/path/to/save",
+		Spec: &model.M3U8Spec{
+			Filename: "index_6m.m3u8",
+			KeyName:  "aes128.key",
+		},
+	}
+	bs, _ := cjson.JSON.MarshalIndent(task, "", "    ")
+	return fmt.Sprintf("\n( example: \n%s \n)", string(bs))
+}
+
 func asobistageTaskValidator(task *model.Task) error {
 	if task.Prefix == "" {
-		return errors.New("missing prefix")
+		return errors.New("missing prefix" + asobistageTaskExample())
 	}
 	if task.SaveTo == "" {
-		return errors.New("we don't know where you want to save the archive")
+		return errors.New("we don't know where you want to save the archive" + asobistageTaskExample())
 	}
 	if task.Spec == nil {
-		return errors.New("missing spec")
+		return errors.New("missing spec" + asobistageTaskExample())
 	}
 	if task.Spec.KeyName == "" {
-		return errors.New("asobistage requires a key file to handle crypto *.ts data")
+		return errors.New("asobistage requires a key file to handle crypto *.ts data" + asobistageTaskExample())
 	}
 	if task.Spec.Filename == "" {
-		return errors.New("missing m3u8 filename")
+		return errors.New("missing m3u8 filename" + asobistageTaskExample())
 	}
 	return nil
 }
