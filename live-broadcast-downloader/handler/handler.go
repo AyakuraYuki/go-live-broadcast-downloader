@@ -17,12 +17,10 @@ var PlatformHandler = map[string]platformHandlerFunc{
 	consts.Asobistage: asobistage,
 	consts.Eplus:      eplus,
 	consts.Zaiko:      zaiko,
-	consts.StreamPass: streampass,
 }
 
 var TaskValidator = map[string]taskValidatorFunc{
 	consts.Asobistage: asobistageTaskValidator,
 	consts.Eplus:      eplusTaskValidator,
 	consts.Zaiko:      zaikoTaskValidator,
-	consts.StreamPass: streampassTaskValidator,
 }
