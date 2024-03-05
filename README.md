@@ -7,12 +7,15 @@ It supports the following platform currently:
 - [Asobistage](https://asobistage.asobistore.jp/)
 - [Eplus](https://ib.eplus.jp/)
 - [Zaiko](https://zaiko.io/)
+- [StreamPass]
 
 This program does not use webdriver or any other headless browser. I made it download archive by using coroutines to boost the download speed.
 
 ## How to use
 
 First thing first, you should have installed FFMpeg, we will merge the archive by using FFMpeg as soon as the archive clips downloaded.
+
+> PS: I added some JSON configuration examples of different platforms. When your task configuration doesn't pass validation, you can get those examples.
 
 ```text
 Usage of ./live-broadcast-downloader:
@@ -21,9 +24,9 @@ Usage of ./live-broadcast-downloader:
   -config string
         An absolute path of your task declaration JSON file.
   -p string
-        The name of Live Broadcast Platform, available values are [asobistage, eplus, zaiko].
+        The name of Live Broadcast Platform, available values are [asobistage, eplus, zaiko, streampass].
   -plat string
-        The name of Live Broadcast Platform, available values are [asobistage, eplus, zaiko].
+        The name of Live Broadcast Platform, available values are [asobistage, eplus, zaiko, streampass].
   -proxy_host string
         Proxy server host or IP address. (default "127.0.0.1")
   -proxy_port int
