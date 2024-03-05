@@ -6,6 +6,9 @@ github.com/Xuanwo/go-locale
 github.com/afex/hystrix-go/hystrix
 github.com/afex/hystrix-go/hystrix/metric_collector
 github.com/afex/hystrix-go/hystrix/rolling
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
 # github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00
 ## explicit
 # github.com/gorilla/websocket v1.5.0
@@ -14,16 +17,21 @@ github.com/gorilla/websocket
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
+github.com/json-iterator/go/extra
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 ## explicit
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.2
 ## explicit; go 1.12
 github.com/modern-go/reflect2
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
 # github.com/smartystreets/goconvey v1.7.2
 ## explicit; go 1.16
 # github.com/stretchr/testify v1.8.2
 ## explicit; go 1.13
+github.com/stretchr/testify/assert
 # golang.org/x/sync v0.1.0
 ## explicit
 golang.org/x/sync/errgroup
@@ -38,3 +46,6 @@ golang.org/x/text/internal/language
 golang.org/x/text/internal/language/compact
 golang.org/x/text/internal/tag
 golang.org/x/text/language
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3
