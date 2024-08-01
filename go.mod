@@ -7,9 +7,10 @@ require (
 	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/gorilla/websocket v1.5.0
 	github.com/json-iterator/go v1.1.12
+	github.com/samber/lo v1.46.0
 	github.com/stretchr/testify v1.8.2
-	golang.org/x/sync v0.1.0
-	golang.org/x/text v0.9.0
+	golang.org/x/sync v0.7.0
+	golang.org/x/text v0.16.0
 )
 
 require (

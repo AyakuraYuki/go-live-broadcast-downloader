@@ -9,8 +9,8 @@ import (
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/misc"
 	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/part"
 	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/verbose"
+	"github.com/samber/lo"
 	"net/http"
 	"net/url"
 	"os"
@@ -64,11 +64,18 @@ func Process(task *model.Task, proxy *nhttp.ProxyOption) error {
 	}()
 
 	funcs := make([]misc.WorkFunc, 0)
-	for indexRange := range part.Partition(len(tsLinks), partitionSize) {
-		bulkLinks := tsLinks[indexRange.Low:indexRange.High]
+	var partitions [][]*model.TSLink
+	if partitionSize == 0 {
+		partitions = append(partitions, tsLinks)
+	} else {
+		partitions = lo.Chunk(tsLinks, partitionSize)
+	}
+	for _, partition := range partitions {
+		partition := partition
 		funcs = append(funcs, func() error {
 			var err0 error
-			for _, link := range bulkLinks {
+			for _, link := range partition {
+				link := link
 				tsPath := path.Join(task.SaveTo, link.Filename)
 				exist, _ := file.IsPathExist(tsPath)
 				if exist {
@@ -77,8 +84,7 @@ func Process(task *model.Task, proxy *nhttp.ProxyOption) error {
 					continue
 				}
 				tsUrl := fmt.Sprintf("%s/%s", strings.TrimRight(task.Prefix, "/"), link.Filename)
-				err0 = DownloadFile(tsUrl, task.SaveTo, link.Filename, proxy)
-				if err0 == nil {
+				if err0 = DownloadFile(tsUrl, task.SaveTo, link.Filename, proxy); err0 == nil {
 					counterChan <- true
 				}
 			}
