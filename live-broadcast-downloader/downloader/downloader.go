@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -50,45 +51,31 @@ func Process(task *model.Task, proxy *nhttp.ProxyOption) error {
 	}
 
 	taskAmount := len(tsLinks)
-	partitionSize := taskAmount / env.Coroutines
-	counterChan := make(chan bool)
-	defer close(counterChan)
-	counter := uint64(0)
-	go func() {
-		for range counterChan {
-			counter += 1
-			if verbose.Verbose {
-				fmt.Printf("downloading [%v / %v] \r", counter, taskAmount)
-			}
-		}
-	}()
+	size := taskAmount / env.Coroutines
+	var partitions [][]*model.TSLink
+	if size > 0 {
+		partitions = lo.Chunk(tsLinks, size)
+	} else {
+		partitions = append(partitions, tsLinks)
+	}
 
 	funcs := make([]misc.WorkFunc, 0)
-	var partitions [][]*model.TSLink
-	if partitionSize == 0 {
-		partitions = append(partitions, tsLinks)
-	} else {
-		partitions = lo.Chunk(tsLinks, partitionSize)
-	}
+	var counter atomic.Int32
 	for _, partition := range partitions {
 		partition := partition
 		funcs = append(funcs, func() error {
-			var err0 error
 			for _, link := range partition {
 				link := link
-				tsPath := path.Join(task.SaveTo, link.Filename)
-				exist, _ := file.IsPathExist(tsPath)
-				if exist {
+				if exist, _ := file.IsPathExist(path.Join(task.SaveTo, link.Filename)); exist {
 					verbose.Printf("skipped exist file: %s", link.Filename)
-					counterChan <- true
 					continue
 				}
 				tsUrl := fmt.Sprintf("%s/%s", strings.TrimRight(task.Prefix, "/"), link.Filename)
-				if err0 = DownloadFile(tsUrl, task.SaveTo, link.Filename, proxy); err0 == nil {
-					counterChan <- true
+				if err0 := DownloadFile(tsUrl, task.SaveTo, link.Filename, proxy); err0 == nil {
+					fmt.Printf("downloading [%v / %v] \r", counter.Add(1), taskAmount)
 				}
 			}
-			return err0
+			return nil
 		})
 	}
 	if err := misc.MultiRun(funcs...); err != nil {
