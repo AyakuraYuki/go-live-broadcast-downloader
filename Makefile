@@ -12,15 +12,11 @@ else
   archiveCmd=tar czpvf $(NAME)-$(BUILD_NAME)-$(VERSION).tar.gz $(BUILD_NAME)
 endif
 
-clean:
-	go clean
-	rm -vrf $(BASE_BUILD_DIR)
+build: clean test
+	go build -mod=vendor -o $(BUILD_DIR)/$(NAME)$(ext) live-broadcast-downloader/main.go
 
 test:
 	go test -race -v -bench=. ./...
-
-build: clean test
-	go build -mod=vendor
 
 release: check-env-release
 	mkdir -p $(BUILD_DIR)
@@ -38,3 +34,7 @@ check-env-release:
 		echo "Env variable GOARCH not set"; \
 		exit 1; \
    	fi
+
+clean:
+	go clean
+	rm -vrf $(BASE_BUILD_DIR)

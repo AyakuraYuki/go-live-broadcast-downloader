@@ -3,21 +3,23 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/env"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/handler"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/tools"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
-	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/localization"
-	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/verbose"
-	"github.com/Xuanwo/go-locale"
-	"golang.org/x/text/language"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/Xuanwo/go-locale"
+	"golang.org/x/text/language"
+
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/env"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/handler"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/encoding/json"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/file"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/localization"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/tools"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/verbose"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/platform"
 )
 
 func init() {
@@ -42,7 +44,7 @@ func init() {
 
 	flag.IntVar(&env.Coroutines, "threads", 10, l10nDictionary[localization.KeyCoroutines])
 	flag.IntVar(&env.MaxRetry, "retry", 10, l10nDictionary[localization.KeyMaxRetry])
-	flag.BoolVar(&verbose.Verbose, "verbose", false, l10nDictionary[localization.KeyVerbose])
+	flag.BoolVar(&env.Verbose, "verbose", false, l10nDictionary[localization.KeyVerbose])
 
 	flag.Usage = func() {
 		w := flag.CommandLine.Output()
@@ -51,97 +53,86 @@ func init() {
 		_, _ = fmt.Fprintf(w, "\n")
 		_, _ = fmt.Fprintf(w, l10nDictionary[localization.KeyUsage])
 	}
+
+	json.RegisterFuzzyDecoders()
 }
 
 func main() {
 	flag.Parse()
-	tools.ValidateFlags()
-
 	var err error
-
-	var proxyOption *nhttp.ProxyOption
-	if env.ProxyType != "" {
-		proxyOption = &nhttp.ProxyOption{
-			Host:      env.ProxyHost,
-			Port:      env.ProxyPort,
-			ProxyType: env.ProxyType,
-		}
+	tools.ValidateFlags()
+	if env.Verbose {
+		verbose.EnableVerbose()
 	}
 
-	platformHandler := handler.PlatformHandler[strings.ToLower(env.Platform)]
-	if platformHandler == nil {
+	// load platform handler
+	platformHandler, ok := handler.PlatformHandler[platform.Platform(strings.ToLower(env.Platform))]
+	if !ok {
 		log.Fatalf("platform %s currently not supported\n", env.Platform)
 	}
-
-	tasks := make([]*model.Task, 0)
-
-	jsonConfigContent := file.ReadFile(env.TaskDefinitionFile)
+	// load task definition
+	jsonConfigContent := file.ReadString(env.TaskDefinitionFile)
 	if jsonConfigContent == "" {
 		log.Fatal("[error] empty config content, exit")
 	}
-	err = cjson.JSON.Unmarshal([]byte(jsonConfigContent), &tasks)
-	if err != nil {
-		panic(err)
+	// load tasks and validate each task
+	tasks := make([]*model.Task, 0)
+	if err = json.JSON.Unmarshal([]byte(jsonConfigContent), &tasks); err != nil {
+		log.Fatal("[error] invalid config content, exit")
 	}
-	// validate
-	taskValidator := handler.TaskValidator[strings.ToLower(env.Platform)]
-	for _, task := range tasks {
-		if taskValidator != nil {
-			err = taskValidator(task)
-			if err != nil {
-				panic(err)
+	if taskValidator, ok := handler.TaskValidator[platform.Platform(strings.ToLower(env.Platform))]; ok {
+		for _, task := range tasks {
+			if err = taskValidator(task); err != nil {
+				log.Fatalf("[error] invalid task definition: %v\n", err)
 			}
 		}
 	}
 
+	// message (and environment params if enabled verbose)
 	log.Println("This is a program that downloads live broadcast archives from asobistage, eplus, zaiko and other m3u8-base stream archives.")
-	verbose.Printf("Platform: %s", env.Platform)
-	verbose.Println("Tasks:")
+	verbose.Log("Platform: %s", env.Platform)
+	verbose.Log("Tasks:")
 	for _, task := range tasks {
-		verbose.Printf("    - save to: %s", task.SaveTo)
-		verbose.Printf("    - page url: %s", task.PageUrl)
-		verbose.Printf("    - m3u8: %s", task.M3U8Url())
+		verbose.Log("    - save to: %s", task.SaveTo)
+		verbose.Log("    - page url: %s", task.PageUrl)
+		verbose.Log("    - m3u8: %s", task.M3U8Url())
 		if task.Spec.KeyName != "" {
-			verbose.Printf("    - key file: %s", task.KeyUrl())
+			verbose.Log("    - key file: %s", task.KeyUrl())
 		}
 	}
 
 	st := time.Now()
 	for _, task := range tasks {
 		// create dist dir
-		err = tools.CreateFolder(task.SaveTo)
-		if err != nil {
-			panic(err)
+		if err = tools.CreateFolder(task.SaveTo); err != nil {
+			log.Fatalf("[error] create folder: %v\n", err)
 		}
 		// download...
-		retry := 0
-		hitRetryLimit := false
+		retry, hitRetryLimit := 0, false
 		for {
 			if retry > env.MaxRetry {
 				hitRetryLimit = true
 				break
 			}
-			err = platformHandler(task, proxyOption)
-			if err != nil {
-				verbose.Printf("Error: %v", err)
+			if err = platformHandler(task); err != nil {
+				verbose.Log("Error: %v", err)
 				log.Println("Error occurred, restarting...")
 				time.Sleep(time.Second * 5)
 				retry++
 				continue
+			} else {
+				break
 			}
-			break
 		}
 
 		// if hit retry limit, skip current task without validating resources
 		if hitRetryLimit {
-			bs, _ := cjson.JSON.Marshal(task)
-			log.Printf("Task hits retry limit, skipped. Task detail: %s\n", string(bs))
+			log.Printf("Task hits retry limit, skipped. Task detail: %s\n", json.Stringify(task))
 			continue
 		}
 
 		// check downloaded resources
-		err = tools.ValidateArchive(task.SaveTo)
-		if err != nil {
+		if err = tools.ValidateArchive(task.SaveTo); err != nil {
 			log.Printf("Validate failed: %v\n", err)
 		} else {
 			log.Printf("Task done with: %v\n", task.Prefix)

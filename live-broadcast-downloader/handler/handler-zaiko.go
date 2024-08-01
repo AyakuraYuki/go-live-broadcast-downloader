@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/downloader"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
-	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
-	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/verbose"
 	"log"
 	"os/exec"
 	"path"
+
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/downloader"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/encoding/json"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/verbose"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
 )
 
 func zaikoTaskExample() string {
@@ -22,8 +22,7 @@ func zaikoTaskExample() string {
 			Filename: "index_6m.m3u8",
 		},
 	}
-	bs, _ := cjson.JSON.MarshalIndent(task, "", "    ")
-	return fmt.Sprintf("\n( example: \n%s \n)", string(bs))
+	return fmt.Sprintf("\n( example: \n%s \n)", json.Prettify(task))
 }
 
 func zaikoTaskValidator(task *model.Task) error {
@@ -42,14 +41,14 @@ func zaikoTaskValidator(task *model.Task) error {
 	return nil
 }
 
-func zaiko(task *model.Task, proxy *nhttp.ProxyOption) error {
-	if err := downloader.DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename, proxy); err != nil {
+func zaiko(task *model.Task) error {
+	if err := downloader.DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename); err != nil {
 		return err
 	} else {
 		log.Printf("[zaiko] download m3u8 playlist successed, file: %s\n", path.Join(task.SaveTo, task.Spec.Filename))
 	}
 
-	if err := downloader.Process(task, proxy); err != nil {
+	if err := downloader.Process(task); err != nil {
 		return err
 	} else {
 		log.Printf("[zaiko] successfully download all files in playlist\n")
@@ -63,11 +62,11 @@ func zaiko(task *model.Task, proxy *nhttp.ProxyOption) error {
 	cmd.Stdout = &cmdOut
 	cmd.Stderr = &cmdErr
 	if err := cmd.Run(); err != nil {
-		verbose.Println(cmdErr.String())
+		verbose.Log(cmdErr.String())
 		return err
 	} else {
-		verbose.Println(cmdOut.String())
-		verbose.Println(cmdErr.String())
+		verbose.Log(cmdOut.String())
+		verbose.Log(cmdErr.String())
 	}
 
 	return nil

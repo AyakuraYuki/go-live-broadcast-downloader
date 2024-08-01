@@ -4,19 +4,20 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/downloader"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/file"
-	cjson "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/json"
-	nhttp "github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/http"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/typeconvert"
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/verbose"
-	"github.com/gorilla/websocket"
 	"log"
 	"os"
 	"os/exec"
 	"path"
 	"regexp"
+
+	"github.com/gorilla/websocket"
+	"github.com/spf13/cast"
+
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/downloader"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/encoding/json"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/file"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/verbose"
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/model"
 )
 
 func asobistageTaskExample() string {
@@ -28,8 +29,7 @@ func asobistageTaskExample() string {
 			KeyName:  "aes128.key",
 		},
 	}
-	bs, _ := cjson.JSON.MarshalIndent(task, "", "    ")
-	return fmt.Sprintf("\n( example: \n%s \n)", string(bs))
+	return fmt.Sprintf("\n( example: \n%s \n)", json.Prettify(task))
 }
 
 func asobistageTaskValidator(task *model.Task) error {
@@ -51,20 +51,20 @@ func asobistageTaskValidator(task *model.Task) error {
 	return nil
 }
 
-func asobistage(task *model.Task, proxy *nhttp.ProxyOption) error {
-	if err := downloader.DownloadFile(task.KeyUrl(), task.SaveTo, task.Spec.KeyName, proxy); err != nil {
+func asobistage(task *model.Task) error {
+	if err := downloader.DownloadFile(task.KeyUrl(), task.SaveTo, task.Spec.KeyName); err != nil {
 		return err
 	} else {
 		log.Printf("[asobistage] download key file successed, file: %s\n", path.Join(task.SaveTo, task.Spec.KeyName))
 	}
 
-	if err := downloader.DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename, proxy); err != nil {
+	if err := downloader.DownloadFile(task.M3U8Url(), task.SaveTo, task.Spec.Filename); err != nil {
 		return err
 	} else {
 		log.Printf("[asobistage] download m3u8 playlist successed, file: %s\n", path.Join(task.SaveTo, task.Spec.Filename))
 	}
 
-	if err := downloader.Process(task, proxy); err != nil {
+	if err := downloader.Process(task); err != nil {
 		return err
 	} else {
 		log.Printf("[asobistage] successfully download all files in playlist\n")
@@ -78,11 +78,11 @@ func asobistage(task *model.Task, proxy *nhttp.ProxyOption) error {
 	cmd.Stdout = &cmdOut
 	cmd.Stderr = &cmdErr
 	if err := cmd.Run(); err != nil {
-		verbose.Println(cmdErr.String())
+		verbose.Log(cmdErr.String())
 		return err
 	} else {
-		verbose.Println(cmdOut.String())
-		verbose.Println(cmdErr.String())
+		verbose.Log(cmdOut.String())
+		verbose.Log(cmdErr.String())
 	}
 
 	// download comments
@@ -104,7 +104,7 @@ func asobistageComments(task *model.Task) {
 	}
 
 	saveTo := path.Join(task.SaveTo, fmt.Sprintf("%s_%s_comments.json", event, day))
-	exist, _ := file.IsPathExist(saveTo)
+	exist, _ := file.Exist(saveTo)
 	if exist {
 		_ = os.Remove(saveTo)
 	}
@@ -113,7 +113,7 @@ func asobistageComments(task *model.Task) {
 		log.Printf("[asobistage] [comments] error when creating comments file, breaked. err: %v\n", err)
 		return
 	}
-	defer outputFile.Close()
+	defer func(f *os.File) { _ = f.Close() }(outputFile)
 
 	wssUrl := fmt.Sprintf("wss://replay.asobistore.jp/%s_%s_ch1/archive", event, day)
 	_, _ = outputFile.WriteString("[")
@@ -124,11 +124,12 @@ func asobistageComments(task *model.Task) {
 		log.Printf("[asobistage] [comments] error when connecting to comment server, breaked. err: %v\n", err)
 		return
 	}
-	defer conn.Close()
+	defer func(conn *websocket.Conn) { _ = conn.Close() }(conn)
+
 	_, _, _ = conn.ReadMessage()
 	noneCount := 0
 	for tick := 0; tick < MaxTick; tick++ {
-		bs, _ := cjson.JSON.Marshal(map[string]string{"func": "archive-get", "time": typeconvert.IntToString(5 * tick)})
+		bs, _ := json.JSON.Marshal(map[string]string{"func": "archive-get", "time": cast.ToString(5 * tick)})
 		if err0 := conn.WriteMessage(websocket.TextMessage, bs); err0 != nil {
 			log.Printf("[asobistage] [comments] error when sending message to comment server, breaked. err: %v\n", err)
 			return

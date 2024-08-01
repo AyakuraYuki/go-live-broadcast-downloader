@@ -11,4 +11,5 @@ var (
 	Coroutines         int
 	LocaleTag          language.Tag
 	MaxRetry           int
+	Verbose            bool
 )

@@ -1,9 +1,10 @@
 package model
 
 import (
-	"github.com/AyakuraYuki/go-live-broadcast-downloader/plugins/net/urls"
 	"log"
 	"strings"
+
+	"github.com/AyakuraYuki/go-live-broadcast-downloader/live-broadcast-downloader/internal/urls"
 )
 
 // M3U8Spec declares the information of m3u8 playlist, presents m3u8 filename and crypto key filename
