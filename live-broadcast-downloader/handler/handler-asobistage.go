@@ -115,7 +115,7 @@ func asobistageComments(task *model.Task) {
 	}
 	defer func(f *os.File) { _ = f.Close() }(outputFile)
 
-	wssUrl := fmt.Sprintf("wss://replay.asobistore.jp/%s_%s_ch1/archive", event, day)
+	wssUrl := fmt.Sprintf("wss://archive.cmsv.asobistore.jp/%s_%s_ch1/archive", event, day) // issue #1: replay.asobistore.jp -> archive.cmsv.asobistore.jp
 	_, _ = outputFile.WriteString("[")
 
 	// fetch comments from websocket
